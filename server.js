@@ -1,44 +1,66 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
 
-// Initialize Express and HTTP server
+// Create a new express app and server
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = socketIo(server);
 
-app.use(express.static('public')); // Serve static files from 'public' folder
+const players = {}; // Store player data by socket ID
 
-// Store player data
-let players = {};
+// Serve static files from the current directory
+app.use(express.static(__dirname));
 
-io.on('connection', (socket) => {
-    console.log('A player connected:', socket.id);
+io.on("connection", (socket) => {
+    console.log("New player connected:", socket.id);
 
-    // Add new player to the players object
-    socket.on('newPlayer', (username) => {
-        players[socket.id] = { username, score: 0, cookieSize: 100 };
-        io.emit('updatePlayers', players); // Send all players to everyone
+    // Handle new player joining
+    socket.on("newPlayer", (data) => {
+        const { username } = data;
+        
+        // Add player data to the players object
+        players[socket.id] = {
+            username: username,
+            score: 0,
+            cookieSize: 100
+        };
+        
+        console.log(`Player joined: ${username} (ID: ${socket.id})`);
+        
+        // Send updated player list to all clients
+        io.emit("updatePlayers", players);
     });
 
-    // Update player score and cookie size
-    socket.on('cookieClicked', () => {
+    // Handle cookie click event
+    socket.on("cookieClicked", () => {
         if (players[socket.id]) {
-            players[socket.id].score += 1;
-            players[socket.id].cookieSize = Math.min(players[socket.id].cookieSize + 5, 300);
-            io.emit('updatePlayers', players); // Broadcast updated players to everyone
+            players[socket.id].score += 1; // Increment the player's score
+            players[socket.id].cookieSize += 5; // Increase cookie size
         }
+        
+        console.log(
+            `Player ${players[socket.id].username} (ID: ${socket.id}) score: ${players[socket.id].score}`
+        );
+        
+        // Send updated player data to all clients
+        io.emit("updatePlayers", players);
     });
 
-    // Handle player disconnect
-    socket.on('disconnect', () => {
-        console.log('Player disconnected:', socket.id);
-        delete players[socket.id];
-        io.emit('updatePlayers', players); // Update everyone on disconnect
+    // Handle player disconnecting
+    socket.on("disconnect", () => {
+        if (players[socket.id]) {
+            console.log(`Player disconnected: ${players[socket.id].username}`);
+            delete players[socket.id]; // Remove player from list
+        }
+        
+        // Send updated player list to all clients
+        io.emit("updatePlayers", players);
     });
 });
 
-const PORT = 3000;
+// Start the server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

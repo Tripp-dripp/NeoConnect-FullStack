@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+#username-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#game-container {
+    text-align: center;
+}
+
+#cookie {
+    width: 100px;
+    cursor: pointer;
+    transition: width 0.2s;
+}
+
+#scrollable-container {
+    max-height: 300px; /* Adjust to control the visible scroll area */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.other-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cookie-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cookie-container img {
+    max-width: 100px;
+}
