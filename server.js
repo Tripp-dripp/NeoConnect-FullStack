@@ -7,7 +7,43 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const players = {}; // Store player data by socket ID
+const players = {}; 
+let hostId = null;
+let gameTimer = null;
+
+io.on("connection", (socket) => {
+    socket.on("newPlayer", (data) => {
+        players[socket.id] = { username: data.username, score: 0 };
+        if (hostId === null) {
+            hostId = socket.id;
+            io.to(hostId).emit("setHost");
+        }
+        io.emit("updatePlayers", players);
+    });
+
+    socket.on("setTimer", (time) => {
+        if (socket.id === hostId) {
+            gameTimer = time;
+            io.emit("timerSet", gameTimer);
+        }
+    });
+
+    socket.on("startGame", () => {
+        if (socket.id === hostId) {
+            io.emit("gameStarted");
+        }
+    });
+
+    socket.on("disconnect", () => {
+        delete players[socket.id];
+        if (socket.id === hostId) {
+            hostId = Object.keys(players)[0] || null;
+            if (hostId) io.to(hostId).emit("setHost");
+        }
+        io.emit("updatePlayers", players);
+    });
+});
+
 
 // Serve static files from the current directory
 app.use(express.static(__dirname));
