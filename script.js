@@ -17,6 +17,38 @@ let cookieSize = 100;
 const maxCookieSize = 300;
 const growthStep = 5;
 let username = "";
+let isHost = false;
+
+socket.on("setHost", () => {
+    isHost = true;
+    const timerInput = document.createElement("input");
+    timerInput.type = "number";
+    timerInput.placeholder = "Set timer (seconds)";
+    document.body.appendChild(timerInput);
+
+    const setTimerButton = document.createElement("button");
+    setTimerButton.innerText = "Set Timer";
+    setTimerButton.onclick = () => {
+        const time = parseInt(timerInput.value);
+        if (time > 0) socket.emit("setTimer", time);
+    };
+    document.body.appendChild(setTimerButton);
+
+    const startGameButton = document.createElement("button");
+    startGameButton.innerText = "Start Game";
+    startGameButton.onclick = () => {
+        socket.emit("startGame");
+    };
+    document.body.appendChild(startGameButton);
+});
+
+socket.on("timerSet", (time) => {
+    alert(`Game timer set to ${time} seconds.`);
+});
+
+socket.on("gameStarted", () => {
+    alert("The game has started!");
+});
 
 // Handle new player join
 startButton.addEventListener("click", () => {
