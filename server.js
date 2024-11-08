@@ -75,10 +75,17 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("cookieClicked", () => {
+    socket.on("cookieClicked", (multiplier = 1) => {
         if (players[socket.id] && gameStarted) {
-            players[socket.id].score += 1;
+            players[socket.id].score += multiplier;
             players[socket.id].cookieSize = Math.min(300, players[socket.id].cookieSize + 5);
+            io.emit("updatePlayers", players);
+        }
+    });
+
+    socket.on("updateScore", (newScore) => {
+        if (players[socket.id] && gameStarted) {
+            players[socket.id].score = newScore;
             io.emit("updatePlayers", players);
         }
     });
