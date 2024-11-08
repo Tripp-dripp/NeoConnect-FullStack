@@ -42,6 +42,10 @@ socket.on("setHost", () => {
     document.body.appendChild(startGameButton);
 });
 
+document.addEventListener('dblclick', function(event) {
+    event.preventDefault();
+}, { passive: false });
+
 socket.on("timerSet", (time) => {
     alert(`Game timer set to ${time} seconds.`);
 });
