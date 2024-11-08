@@ -24,17 +24,7 @@
             <div id="other-players" class="players-list"></div>
         </div>
     </div>
-    <script>
-    // Disable double-tap zoom
-    let lastTouchEnd = 0;
-    document.body.addEventListener('touchend', function(event) {
-      const currentTime = new Date().getTime();
-      if (currentTime - lastTouchEnd <= 300) {
-        event.preventDefault(); // Prevent the default action (zoom)
-      }
-      lastTouchEnd = currentTime;
-    });
-    </script>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
