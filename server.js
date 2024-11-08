@@ -2,7 +2,6 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 
-// Create a new express app and server
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -10,14 +9,41 @@ const io = socketIo(server);
 const players = {}; 
 let hostId = null;
 let gameTimer = null;
+let gameStarted = false;
+let timeRemaining = 0;
+let timerInterval = null;
+
+function resetGame() {
+    gameStarted = false;
+    timeRemaining = 0;
+    if (timerInterval) clearInterval(timerInterval);
+    
+    // Reset all players' scores and cookie sizes
+    Object.keys(players).forEach(playerId => {
+        players[playerId].score = 0;
+        players[playerId].cookieSize = 100;
+    });
+    
+    io.emit("gameReset");
+    io.emit("updatePlayers", players);
+}
 
 io.on("connection", (socket) => {
     socket.on("newPlayer", (data) => {
-        players[socket.id] = { username: data.username, score: 0 };
+        players[socket.id] = { 
+            username: data.username, 
+            score: 0,
+            cookieSize: 100
+        };
         if (hostId === null) {
             hostId = socket.id;
             io.to(hostId).emit("setHost");
         }
+        socket.emit("gameState", { 
+            gameStarted,
+            timeRemaining,
+            hostId: socket.id === hostId
+        });
         io.emit("updatePlayers", players);
     });
 
@@ -29,8 +55,31 @@ io.on("connection", (socket) => {
     });
 
     socket.on("startGame", () => {
-        if (socket.id === hostId) {
-            io.emit("gameStarted");
+        if (socket.id === hostId && !gameStarted) {
+            gameStarted = true;
+            timeRemaining = gameTimer;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                io.emit("timerUpdate", timeRemaining);
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    resetGame();
+                }
+            }, 1000);
+            
+            io.emit("gameStarted", timeRemaining);
+        }
+    });
+
+    socket.on("cookieClicked", () => {
+        if (players[socket.id] && gameStarted) {
+            players[socket.id].score += 1;
+            players[socket.id].cookieSize = Math.min(300, players[socket.id].cookieSize + 5);
+            io.emit("updatePlayers", players);
         }
     });
 
@@ -38,64 +87,18 @@ io.on("connection", (socket) => {
         delete players[socket.id];
         if (socket.id === hostId) {
             hostId = Object.keys(players)[0] || null;
-            if (hostId) io.to(hostId).emit("setHost");
+            if (hostId) {
+                io.to(hostId).emit("setHost");
+            } else {
+                resetGame();
+            }
         }
         io.emit("updatePlayers", players);
     });
 });
 
-
-// Serve static files from the current directory
 app.use(express.static(__dirname));
 
-io.on("connection", (socket) => {
-    console.log("New player connected:", socket.id);
-
-    // Handle new player joining
-    socket.on("newPlayer", (data) => {
-        const { username } = data;
-        
-        // Add player data to the players object
-        players[socket.id] = {
-            username: username,
-            score: 0,
-            cookieSize: 100
-        };
-        
-        console.log(`Player joined: ${username} (ID: ${socket.id})`);
-        
-        // Send updated player list to all clients
-        io.emit("updatePlayers", players);
-    });
-
-    // Handle cookie click event
-    socket.on("cookieClicked", () => {
-        if (players[socket.id]) {
-            players[socket.id].score += 1; // Increment the player's score
-            players[socket.id].cookieSize += 5; // Increase cookie size
-        }
-        
-        console.log(
-            `Player ${players[socket.id].username} (ID: ${socket.id}) score: ${players[socket.id].score}`
-        );
-        
-        // Send updated player data to all clients
-        io.emit("updatePlayers", players);
-    });
-
-    // Handle player disconnecting
-    socket.on("disconnect", () => {
-        if (players[socket.id]) {
-            console.log(`Player disconnected: ${players[socket.id].username}`);
-            delete players[socket.id]; // Remove player from list
-        }
-        
-        // Send updated player list to all clients
-        io.emit("updatePlayers", players);
-    });
-});
-
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
