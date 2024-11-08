@@ -27,7 +27,6 @@ body {
     width: 100px;
     cursor: pointer;
     transition: width 0.2s;
-    touch-action: manipulation;
 }
 
 #scrollable-container {
