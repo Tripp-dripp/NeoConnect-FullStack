@@ -3,9 +3,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
 }
 
 .hidden {
@@ -13,50 +15,146 @@ body {
 }
 
 #username-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+#username-container input {
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#username-container button {
+    padding: 8px 16px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 #game-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#main-game-area {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     text-align: center;
+}
+
+#game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+#timer-display {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
 }
 
 #cookie {
     width: 100px;
     cursor: pointer;
-    transition: width 0.2s;
+    transition: all 0.2s;
+    margin: 20px 0;
+}
+
+#cookie:hover {
+    transform: scale(1.05);
 }
 
 #scrollable-container {
-    max-height: 300px; /* Adjust to control the visible scroll area */
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 15px;
+    max-height: 500px;
     overflow-y: auto;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-top: 20px;
-    width: 100%;
-    max-width: 400px;
 }
 
 .players-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
 
 .other-player {
+    background: #f8f8f8;
+    padding: 10px;
+    border-radius: 8px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
 }
 
 .cookie-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 5px;
 }
 
 .cookie-container img {
-    max-width: 100px;
+    max-width: 60px;
+    transition: width 0.2s;
+}
+
+#host-controls {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: none; /* Hidden by default, shown for host */
+}
+
+#host-controls input {
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100px;
+}
+
+#host-controls button {
+    padding: 8px 16px;
+    margin: 0 5px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#host-controls button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    #game-container {
+        grid-template-columns: 1fr;
+    }
+    
+    #main-game-area, #scrollable-container {
+        max-width: 100%;
+    }
 }
