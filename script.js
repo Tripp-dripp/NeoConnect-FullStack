@@ -20,9 +20,46 @@ let username = "";
 let isHost = false;
 let gameStarted = false;
 
+// Power-ups system
+let powerUps = {
+    coffeePowder: {
+        active: false,
+        timeLeft: 0,
+        multiplier: 2,
+        cost: 100,
+        duration: 300, // 5 minutes in seconds
+        name: "Coffee Powder",
+        description: "2x clicking power for 5 minutes"
+    }
+};
+
+let scoreMultiplier = 1;
+
 // Create main game structure
 function createGameStructure() {
-    gameContainer.innerHTML = `
+    const shopHTML = `
+        <div id="shop-container" class="shop-hidden">
+            <div id="shop-content">
+                <h3>Power-ups Shop</h3>
+                <div id="active-powerups">
+                    <h4>Active Power-ups</h4>
+                    <div id="active-powerups-list"></div>
+                </div>
+                <div id="available-powerups">
+                    <h4>Available Power-ups</h4>
+                    <div class="powerup-item">
+                        <h5>Coffee Powder</h5>
+                        <p>2x clicking power for 5 minutes</p>
+                        <p>Cost: 100 points</p>
+                        <button id="buy-coffee" class="shop-button">Buy</button>
+                    </div>
+                </div>
+            </div>
+            <button id="toggle-shop" class="shop-toggle">⚡</button>
+        </div>
+    `;
+
+    gameContainer.innerHTML = shopHTML + `
         <div id="main-game-area">
             <div id="host-controls"></div>
             <div id="game-info">
@@ -38,6 +75,19 @@ function createGameStructure() {
             <div id="other-players" class="players-list"></div>
         </div>
     `;
+
+    // Add shop toggle functionality
+    const shopContainer = document.getElementById('shop-container');
+    const toggleShop = document.getElementById('toggle-shop');
+    toggleShop.addEventListener('click', () => {
+        shopContainer.classList.toggle('shop-hidden');
+    });
+
+    // Add power-up purchase functionality
+    const buyButton = document.getElementById('buy-coffee');
+    buyButton.addEventListener('click', () => {
+        purchasePowerUp('coffeePowder');
+    });
 
     // Reassign element references after creating structure
     cookieImage = document.getElementById("cookie");
@@ -59,11 +109,73 @@ function setupCookieClickHandler() {
             cookieSize += growthStep;
             cookieImage.style.width = `${cookieSize}px`;
         }
-        score++;
+        score += scoreMultiplier;
         scoreDisplay.textContent = `Score: ${score}`;
         
-        socket.emit('cookieClicked');
+        socket.emit('cookieClicked', scoreMultiplier);
     });
+}
+
+function purchasePowerUp(powerUpId) {
+    const powerUp = powerUps[powerUpId];
+    if (!gameStarted) {
+        alert("Please wait for the game to start!");
+        return;
+    }
+    if (score < powerUp.cost) {
+        alert("Not enough points!");
+        return;
+    }
+    if (powerUp.active) {
+        alert("Power-up already active!");
+        return;
+    }
+
+    score -= powerUp.cost;
+    scoreDisplay.textContent = `Score: ${score}`;
+    activatePowerUp(powerUpId);
+    socket.emit('updateScore', score);
+}
+
+function activatePowerUp(powerUpId) {
+    const powerUp = powerUps[powerUpId];
+    powerUp.active = true;
+    powerUp.timeLeft = powerUp.duration;
+    scoreMultiplier = powerUp.multiplier;
+
+    updateActivePowerUps();
+    
+    const powerUpTimer = setInterval(() => {
+        powerUp.timeLeft--;
+        updateActivePowerUps();
+        
+        if (powerUp.timeLeft <= 0) {
+            clearInterval(powerUpTimer);
+            powerUp.active = false;
+            scoreMultiplier = 1;
+            updateActivePowerUps();
+        }
+    }, 1000);
+}
+
+function updateActivePowerUps() {
+    const activePowerUpsList = document.getElementById('active-powerups-list');
+    activePowerUpsList.innerHTML = '';
+
+    for (const [id, powerUp] of Object.entries(powerUps)) {
+        if (powerUp.active) {
+            const minutes = Math.floor(powerUp.timeLeft / 60);
+            const seconds = powerUp.timeLeft % 60;
+            const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            activePowerUpsList.innerHTML += `
+                <div class="active-powerup">
+                    <span>${powerUp.name}</span>
+                    <span>Time left: ${timeString}</span>
+                </div>
+            `;
+        }
+    }
 }
 
 function formatTime(seconds) {
@@ -139,6 +251,15 @@ socket.on("gameReset", () => {
     gameStarted = false;
     score = 0;
     cookieSize = 100;
+    scoreMultiplier = 1;
+    
+    // Reset all power-ups
+    for (const powerUp of Object.values(powerUps)) {
+        powerUp.active = false;
+        powerUp.timeLeft = 0;
+    }
+    updateActivePowerUps();
+    
     if (cookieImage) {
         cookieImage.style.opacity = "0.5";
         cookieImage.style.width = "100px";
@@ -155,18 +276,6 @@ socket.on("gameReset", () => {
         if (startGameBtn) {
             startGameBtn.disabled = false;
         }
-    }
-});
-
-startButton.addEventListener("click", () => {
-    username = usernameInput.value.trim();
-    if (username) {
-        usernameContainer.style.display = "none";
-        gameContainer.classList.remove("hidden");
-        createGameStructure();
-        socket.emit('newPlayer', { username });
-    } else {
-        alert("Please enter a username to start.");
     }
 });
 
@@ -201,6 +310,18 @@ socket.on('updatePlayers', (players) => {
         `;
         
         otherPlayersContainer.appendChild(playerDiv);
+    }
+});
+
+startButton.addEventListener("click", () => {
+    username = usernameInput.value.trim();
+    if (username) {
+        usernameContainer.style.display = "none";
+        gameContainer.classList.remove("hidden");
+        createGameStructure();
+        socket.emit('newPlayer', { username });
+    } else {
+        alert("Please enter a username to start.");
     }
 });
 
