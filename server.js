@@ -14,6 +14,27 @@ let timeRemaining = 0;
 let timerInterval = null;
 
 function resetGame() {
+    if (gameStarted) {  // Only determine winner if a game was in progress
+        // Find the winner
+        let maxScore = -1;
+        let winner = null;
+        
+        Object.entries(players).forEach(([id, player]) => {
+            if (player.score > maxScore) {
+                maxScore = player.score;
+                winner = player;
+            }
+        });
+        
+        // Announce winner before resetting
+        if (winner) {
+            io.emit("gameOver", {
+                winner: winner.username,
+                score: winner.score
+            });
+        }
+    }
+    
     gameStarted = false;
     timeRemaining = 0;
     if (timerInterval) clearInterval(timerInterval);
