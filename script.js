@@ -1,13 +1,15 @@
 const socket = io();
 
-// HTML elements
+// HTML elements that won't be recreated
 const usernameContainer = document.getElementById("username-container");
 const usernameInput = document.getElementById("username-input");
 const startButton = document.getElementById("start-button");
 const gameContainer = document.getElementById("game-container");
-const scoreDisplay = document.getElementById("score-display");
-const cookieImage = document.getElementById("cookie");
-const otherPlayersContainer = document.getElementById("other-players");
+
+// HTML elements that will be recreated - use 'let'
+let scoreDisplay;
+let cookieImage;
+let otherPlayersContainer;
 
 // Game variables
 let score = 0;
@@ -36,6 +38,32 @@ function createGameStructure() {
             <div id="other-players" class="players-list"></div>
         </div>
     `;
+
+    // Reassign element references after creating structure
+    cookieImage = document.getElementById("cookie");
+    scoreDisplay = document.getElementById("score-display");
+    otherPlayersContainer = document.getElementById("other-players");
+    
+    // Add click handler for cookie
+    setupCookieClickHandler();
+}
+
+function setupCookieClickHandler() {
+    cookieImage.addEventListener("click", () => {
+        if (!gameStarted) {
+            alert("Please wait for the host to start the game!");
+            return;
+        }
+        
+        if (cookieSize < maxCookieSize) {
+            cookieSize += growthStep;
+            cookieImage.style.width = `${cookieSize}px`;
+        }
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
+        
+        socket.emit('cookieClicked');
+    });
 }
 
 function formatTime(seconds) {
@@ -67,7 +95,9 @@ socket.on("setHost", () => {
 socket.on("gameState", (state) => {
     gameStarted = state.gameStarted;
     isHost = state.hostId;
-    cookieImage.style.opacity = gameStarted ? "1" : "0.5";
+    if (cookieImage) {
+        cookieImage.style.opacity = gameStarted ? "1" : "0.5";
+    }
     if (state.timeRemaining) {
         document.getElementById("timer-display").textContent = 
             `Time: ${formatTime(state.timeRemaining)}`;
@@ -75,19 +105,33 @@ socket.on("gameState", (state) => {
 });
 
 socket.on("timerSet", (time) => {
-    document.getElementById("timer-display").textContent = `Time: ${formatTime(time)}`;
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+        timerDisplay.textContent = `Time: ${formatTime(time)}`;
+    }
 });
 
 socket.on("timerUpdate", (time) => {
-    document.getElementById("timer-display").textContent = `Time: ${formatTime(time)}`;
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+        timerDisplay.textContent = `Time: ${formatTime(time)}`;
+    }
 });
 
 socket.on("gameStarted", (time) => {
     gameStarted = true;
-    cookieImage.style.opacity = "1";
-    document.getElementById("timer-display").textContent = `Time: ${formatTime(time)}`;
+    if (cookieImage) {
+        cookieImage.style.opacity = "1";
+    }
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+        timerDisplay.textContent = `Time: ${formatTime(time)}`;
+    }
     if (isHost) {
-        document.getElementById("start-game-btn").disabled = true;
+        const startGameBtn = document.getElementById("start-game-btn");
+        if (startGameBtn) {
+            startGameBtn.disabled = true;
+        }
     }
 });
 
@@ -95,12 +139,22 @@ socket.on("gameReset", () => {
     gameStarted = false;
     score = 0;
     cookieSize = 100;
-    cookieImage.style.opacity = "0.5";
-    cookieImage.style.width = "100px";
-    scoreDisplay.textContent = "Score: 0";
-    document.getElementById("timer-display").textContent = "Time: --:--";
+    if (cookieImage) {
+        cookieImage.style.opacity = "0.5";
+        cookieImage.style.width = "100px";
+    }
+    if (scoreDisplay) {
+        scoreDisplay.textContent = "Score: 0";
+    }
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+        timerDisplay.textContent = "Time: --:--";
+    }
     if (isHost) {
-        document.getElementById("start-game-btn").disabled = false;
+        const startGameBtn = document.getElementById("start-game-btn");
+        if (startGameBtn) {
+            startGameBtn.disabled = false;
+        }
     }
 });
 
@@ -110,45 +164,28 @@ startButton.addEventListener("click", () => {
         usernameContainer.style.display = "none";
         gameContainer.classList.remove("hidden");
         createGameStructure();
-        
-        // Reassign elements after structure creation
-        cookieImage = document.getElementById("cookie");
-        scoreDisplay = document.getElementById("score-display");
-        
         socket.emit('newPlayer', { username });
-        
-        // Add click handler after recreating the cookie element
-        cookieImage.addEventListener("click", () => {
-            if (!gameStarted) {
-                alert("Please wait for the host to start the game!");
-                return;
-            }
-            
-            if (cookieSize < maxCookieSize) {
-                cookieSize += growthStep;
-                cookieImage.style.width = `${cookieSize}px`;
-            }
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-            
-            socket.emit('cookieClicked');
-        });
     } else {
         alert("Please enter a username to start.");
     }
 });
 
 socket.on('updatePlayers', (players) => {
-    const otherPlayers = document.getElementById("other-players");
-    otherPlayers.innerHTML = "";
+    if (!otherPlayersContainer) return;
+    
+    otherPlayersContainer.innerHTML = "";
 
     for (const id in players) {
         const player = players[id];
         if (id === socket.id) {
             score = player.score;
             cookieSize = player.cookieSize;
-            cookieImage.style.width = `${player.cookieSize}px`;
-            scoreDisplay.textContent = `Score: ${player.score}`;
+            if (cookieImage) {
+                cookieImage.style.width = `${player.cookieSize}px`;
+            }
+            if (scoreDisplay) {
+                scoreDisplay.textContent = `Score: ${player.score}`;
+            }
             continue;
         }
 
@@ -163,7 +200,7 @@ socket.on('updatePlayers', (players) => {
             </div>
         `;
         
-        otherPlayers.appendChild(playerDiv);
+        otherPlayersContainer.appendChild(playerDiv);
     }
 });
 
