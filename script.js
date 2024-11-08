@@ -169,7 +169,32 @@ startButton.addEventListener("click", () => {
         alert("Please enter a username to start.");
     }
 });
-
+socket.on("gameOver", ({ winner, score }) => {
+    const winnerBanner = document.createElement("div");
+    winnerBanner.style.position = "fixed";
+    winnerBanner.style.top = "50%";
+    winnerBanner.style.left = "50%";
+    winnerBanner.style.transform = "translate(-50%, -50%)";
+    winnerBanner.style.background = "rgba(255, 215, 0, 0.95)";
+    winnerBanner.style.padding = "20px";
+    winnerBanner.style.borderRadius = "10px";
+    winnerBanner.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
+    winnerBanner.style.zIndex = "1000";
+    winnerBanner.innerHTML = `
+        <h2 style="margin: 0 0 10px 0; color: #333;">🎉 Game Over! 🎉</h2>
+        <p style="margin: 0; font-size: 1.2em; color: #333;">
+            Winner: <strong>${winner}</strong><br>
+            Final Score: <strong>${score}</strong>
+        </p>
+    `;
+    
+    document.body.appendChild(winnerBanner);
+    
+    // Remove the banner after 5 seconds
+    setTimeout(() => {
+        document.body.removeChild(winnerBanner);
+    }, 5000);
+});
 socket.on('updatePlayers', (players) => {
     if (!otherPlayersContainer) return;
     
