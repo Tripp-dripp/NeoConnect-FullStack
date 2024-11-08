@@ -2,27 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Clicker Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker Game</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Username Input Section -->
     <div id="username-container">
+        <h2>Welcome to Cookie Clicker!</h2>
         <input type="text" id="username-input" placeholder="Enter your username">
         <button id="start-button">Start Game</button>
     </div>
 
-    <!-- Game Container -->
     <div id="game-container" class="hidden">
-        <p id="username-display"></p>
-        <p id="score-display">Score: 0</p>
-        <img id="cookie" src="images/playerCookie.png" alt="Cookie" />
-        
-        <!-- Scrollable container for other players -->
-        <div id="scrollable-container">
-            <div id="other-players" class="players-list"></div>
-        </div>
+        <!-- Content will be dynamically inserted by JavaScript -->
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
