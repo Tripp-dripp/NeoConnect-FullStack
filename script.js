@@ -19,9 +19,52 @@ const growthStep = 5;
 let username = "";
 let isHost = false;
 let gameStarted = false;
+let shopOpen = false;
+let shopItems = [
+    {
+        id: 1,
+        title: "Auto Clicker",
+        description: "Clicks automatically every second",
+        price: 100,
+        owned: 0
+    },
+    {
+        id: 2,
+        title: "Double Click",
+        description: "Double your click value",
+        price: 200,
+        owned: 0
+    },
+    {
+        id: 3,
+        title: "Bigger Cookie",
+        description: "Start with a bigger cookie",
+        price: 150,
+        owned: 0
+    }
+];
 
 // Create main game structure
 function createGameStructure() {
+    // Add background image
+    document.body.insertAdjacentHTML('afterbegin', `
+        <img src="background.png" class="background-image">
+    `);
+
+    // Add shop button and sidebar
+    document.body.insertAdjacentHTML('beforeend', `
+        <button class="shop-tab-button" id="shopTabButton">
+            <img src="shopTab.png" alt="Shop" style="width: 24px; height: 24px;">
+        </button>
+        <div class="shop-sidebar" id="shopSidebar">
+            <div class="shop-content">
+                <h2>Shop</h2>
+                <div id="shopItems"></div>
+            </div>
+        </div>
+    `);
+
+    // Add the existing game structure
     gameContainer.innerHTML = `
         <div id="main-game-area">
             <div id="host-controls"></div>
@@ -39,15 +82,77 @@ function createGameStructure() {
         </div>
     `;
 
-    // Reassign element references after creating structure
+    // Reassign element references
     cookieImage = document.getElementById("cookie");
     scoreDisplay = document.getElementById("score-display");
     otherPlayersContainer = document.getElementById("other-players");
     
-    // Add click handler for cookie
+    // Setup event listeners
     setupCookieClickHandler();
+    setupShopHandlers();
+    updateShopDisplay();
 }
 
+function setupShopHandlers() {
+    const shopTabButton = document.getElementById('shopTabButton');
+    const shopSidebar = document.getElementById('shopSidebar');
+
+    shopTabButton.addEventListener('click', () => {
+        shopOpen = !shopOpen;
+        shopSidebar.classList.toggle('open', shopOpen);
+    });
+}
+
+function updateShopDisplay() {
+    const shopItemsContainer = document.getElementById('shopItems');
+    shopItemsContainer.innerHTML = shopItems.map(item => `
+        <div class="shop-item" onclick="purchaseItem(${item.id})">
+            <div class="shop-item-info">
+                <div class="shop-item-title">${item.title} ${item.owned > 0 ? `(${item.owned})` : ''}</div>
+                <div class="shop-item-description">${item.description}</div>
+            </div>
+            <div class="shop-item-price">${item.price}</div>
+        </div>
+    `).join('');
+}
+
+function purchaseItem(itemId) {
+    if (!gameStarted) {
+        alert("Please wait for the game to start!");
+        return;
+    }
+
+    const item = shopItems.find(i => i.id === itemId);
+    if (item && score >= item.price) {
+        score -= item.price;
+        item.owned += 1;
+        scoreDisplay.textContent = `Score: ${score}`;
+        updateShopDisplay();
+        
+        // Apply item effects
+        switch(itemId) {
+            case 1: // Auto Clicker
+                setInterval(() => {
+                    if (gameStarted) {
+                        socket.emit('cookieClicked');
+                    }
+                }, 1000);
+                break;
+            case 2: // Double Click
+                // Modify the click handler to emit twice
+                socket.emit('cookieClicked');
+                break;
+            case 3: // Bigger Cookie
+                cookieSize = Math.min(maxCookieSize, cookieSize + 50);
+                cookieImage.style.width = `${cookieSize}px`;
+                break;
+        }
+        
+        socket.emit('updateScore', score);
+    } else if (score < item.price) {
+        alert("Not enough points!");
+    }
+}
 function setupCookieClickHandler() {
     cookieImage.addEventListener("click", () => {
         if (!gameStarted) {
