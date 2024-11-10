@@ -165,19 +165,19 @@ body {
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    background: white;
-    padding: 10px;
-    border-radius: 0 10px 10px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: transparent;
+    padding: 0;
     border: none;
     cursor: pointer;
     transition: all 0.2s;
+    width: 48px; /* Increased size */
+    height: 48px; /* Increased size */
 }
 
 .shop-tab-button:hover {
-    background: #f0f0f0;
-    transform: translateY(-50%) scale(1.05);
+    transform: translateY(-50%) scale(1.1);
 }
+
 
 .shop-sidebar {
     position: fixed;
