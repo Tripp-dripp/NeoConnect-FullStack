@@ -65,9 +65,9 @@ io.on("connection", (socket) => {
             score: 0,
             cookieSize: 100,
             powerups: {
-            doublePower: false
-        }
-    };
+                doublePower: false
+            }
+        };
         });
         if (hostId === null) {
             hostId = socket.id;
