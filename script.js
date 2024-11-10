@@ -27,20 +27,6 @@ let shopItems = [
         description: "Clicks automatically every second",
         price: 100,
         owned: 0
-    },
-    {
-        id: 2,
-        title: "Double Click",
-        description: "Double your click value",
-        price: 200,
-        owned: 0
-    },
-    {
-        id: 3,
-        title: "Bigger Cookie",
-        description: "Start with a bigger cookie",
-        price: 150,
-        owned: 0
     }
 ];
 
@@ -48,23 +34,25 @@ let shopItems = [
 function createGameStructure() {
     // Add background image
     document.body.insertAdjacentHTML('afterbegin', `
-        <img src="background.png" class="background-image">
+        <img src="images/background.png" class="background-image">
     `);
 
-    // Add shop button and sidebar
+    // Add shop button and sidebar with correct image path
     document.body.insertAdjacentHTML('beforeend', `
         <button class="shop-tab-button" id="shopTabButton">
-            <img src="shopTab.png" alt="Shop" style="width: 24px; height: 24px;">
+            <img src="images/shopTab.png" alt="Shop" style="width: 24px; height: 24px;">
         </button>
         <div class="shop-sidebar" id="shopSidebar">
             <div class="shop-content">
-                <h2>Shop</h2>
+                <div class="shop-header">
+                    <h2>Mr. Coffee's Shop</h2>
+                </div>
                 <div id="shopItems"></div>
             </div>
         </div>
     `);
 
-    // Add the existing game structure
+    // Rest of the game structure remains the same
     gameContainer.innerHTML = `
         <div id="main-game-area">
             <div id="host-controls"></div>
@@ -82,15 +70,15 @@ function createGameStructure() {
         </div>
     `;
 
-    // Reassign element references
+    // Rest of the function remains the same
     cookieImage = document.getElementById("cookie");
     scoreDisplay = document.getElementById("score-display");
     otherPlayersContainer = document.getElementById("other-players");
     
-    // Setup event listeners
     setupCookieClickHandler();
     setupShopHandlers();
     updateShopDisplay();
+    loadGameState();
 }
 
 function setupShopHandlers() {
@@ -105,15 +93,18 @@ function setupShopHandlers() {
 
 function updateShopDisplay() {
     const shopItemsContainer = document.getElementById('shopItems');
-    shopItemsContainer.innerHTML = shopItems.map(item => `
-        <div class="shop-item" onclick="purchaseItem(${item.id})">
+    const mrCoffeeOwned = doubleClickActive;
+    
+    shopItemsContainer.innerHTML = `
+        <div class="shop-item ${mrCoffeeOwned ? 'owned' : ''}" onclick="purchaseMrCoffee()">
+            <img src="images/mrCoffee.png" alt="Mr. Coffee" class="shop-item-image">
             <div class="shop-item-info">
-                <div class="shop-item-title">${item.title} ${item.owned > 0 ? `(${item.owned})` : ''}</div>
-                <div class="shop-item-description">${item.description}</div>
+                <div class="shop-item-title">Mr. Coffee ${mrCoffeeOwned ? '(Active)' : ''}</div>
+                <div class="shop-item-description">Doubles your clicks and adds an auto-clicker!</div>
             </div>
-            <div class="shop-item-price">${item.price}</div>
+            <div class="shop-item-price">100</div>
         </div>
-    `).join('');
+    `;
 }
 
 function purchaseItem(itemId) {
@@ -137,14 +128,6 @@ function purchaseItem(itemId) {
                         socket.emit('cookieClicked');
                     }
                 }, 1000);
-                break;
-            case 2: // Double Click
-                // Modify the click handler to emit twice
-                socket.emit('cookieClicked');
-                break;
-            case 3: // Bigger Cookie
-                cookieSize = Math.min(maxCookieSize, cookieSize + 50);
-                cookieImage.style.width = `${cookieSize}px`;
                 break;
         }
         
