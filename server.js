@@ -68,7 +68,7 @@ io.on("connection", (socket) => {
             doublePower: false
         }
     };
-        };
+        });
         if (hostId === null) {
             hostId = socket.id;
             io.to(hostId).emit("setHost");
