@@ -6,7 +6,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const players = {}; 
+const players = {
+    // [socketId]: {
+    //     username: string,
+    //     score: number,
+    //     cookieSize: number,
+    //     powerups: {
+    //         doublePower: boolean
+    //     }
+    // }
+}; 
 let hostId = null;
 let gameTimer = null;
 let gameStarted = false;
@@ -54,7 +63,11 @@ io.on("connection", (socket) => {
         players[socket.id] = { 
             username: data.username, 
             score: 0,
-            cookieSize: 100
+            cookieSize: 100,
+            powerups: {
+            doublePower: false
+        }
+    };
         };
         if (hostId === null) {
             hostId = socket.id;
@@ -96,13 +109,23 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("cookieClicked", () => {
-        if (players[socket.id] && gameStarted) {
-            players[socket.id].score += 1;
-            players[socket.id].cookieSize = Math.min(300, players[socket.id].cookieSize + 5);
-            io.emit("updatePlayers", players);
+socket.on("applyPowerup", (data) => {
+    if (players[socket.id] && gameStarted) {
+        if (data.type === 'doublePower') {
+            players[socket.id].powerups.doublePower = true;
         }
-    });
+    }
+});
+
+// Modify the cookieClicked handler to account for double power
+socket.on("cookieClicked", () => {
+    if (players[socket.id] && gameStarted) {
+        const clickPower = players[socket.id].powerups.doublePower ? 2 : 1;
+        players[socket.id].score += clickPower;
+        players[socket.id].cookieSize = Math.min(300, players[socket.id].cookieSize + 5);
+        io.emit("updatePlayers", players);
+    }
+});
 
     socket.on("disconnect", () => {
         delete players[socket.id];
