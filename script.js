@@ -27,6 +27,13 @@ let shopItems = [
         description: "Clicks automatically every second",
         price: 100,
         owned: 0
+    },
+    {
+        id: 2,
+        title: "Mr. Coffee's Steam Brew",
+        description: "Doubles your clicking power permanently!",
+        price: 150,
+        owned: 0
     }
 ];
 
@@ -39,9 +46,7 @@ function createGameStructure() {
 
     // Add shop button and sidebar with correct image path
     document.body.insertAdjacentHTML('beforeend', `
-        <button class="shop-tab-button" id="shopTabButton">
-            <img src="images/shopTab.png" alt="Shop" style="width: 24px; height: 24px;">
-        </button>
+        <img src="images/shopTab.png" alt="Shop" class="shop-tab-button" id="shopTabButton">
         <div class="shop-sidebar" id="shopSidebar">
             <div class="shop-content">
                 <div class="shop-header">
@@ -70,7 +75,6 @@ function createGameStructure() {
         </div>
     `;
 
-    // Rest of the function remains the same
     cookieImage = document.getElementById("cookie");
     scoreDisplay = document.getElementById("score-display");
     otherPlayersContainer = document.getElementById("other-players");
@@ -93,18 +97,16 @@ function setupShopHandlers() {
 
 function updateShopDisplay() {
     const shopItemsContainer = document.getElementById('shopItems');
-    const mrCoffeeOwned = doubleClickActive;
-    
-    shopItemsContainer.innerHTML = `
-        <div class="shop-item ${mrCoffeeOwned ? 'owned' : ''}" onclick="purchaseMrCoffee()">
-            <img src="images/mrCoffee.png" alt="Mr. Coffee" class="shop-item-image">
+    shopItemsContainer.innerHTML = shopItems.map(item => `
+        <div class="shop-item ${item.owned > 0 ? 'owned' : ''}" onclick="purchaseItem(${item.id})">
+            <img src="images/mrCoffee.png" alt="Shop Item" class="shop-item-image">
             <div class="shop-item-info">
-                <div class="shop-item-title">Mr. Coffee ${mrCoffeeOwned ? '(Active)' : ''}</div>
-                <div class="shop-item-description">Doubles your clicks and adds an auto-clicker!</div>
+                <div class="shop-item-title">${item.title} ${item.owned > 0 ? '(Active)' : ''}</div>
+                <div class="shop-item-description">${item.description}</div>
             </div>
-            <div class="shop-item-price">100</div>
+            <div class="shop-item-price">${item.price}</div>
         </div>
-    `;
+    `).join('');
 }
 
 function purchaseItem(itemId) {
@@ -114,11 +116,12 @@ function purchaseItem(itemId) {
     }
 
     const item = shopItems.find(i => i.id === itemId);
-    if (item && score >= item.price) {
+    if (!item || item.owned > 0) return; // Prevent buying the same item multiple times
+    
+    if (score >= item.price) {
         score -= item.price;
         item.owned += 1;
         scoreDisplay.textContent = `Score: ${score}`;
-        updateShopDisplay();
         
         // Apply item effects
         switch(itemId) {
@@ -129,13 +132,18 @@ function purchaseItem(itemId) {
                     }
                 }, 1000);
                 break;
+            case 2: // Steam Brew
+                socket.emit('applyPowerup', { type: 'doublePower' });
+                break;
         }
         
+        updateShopDisplay();
         socket.emit('updateScore', score);
-    } else if (score < item.price) {
+    } else {
         alert("Not enough points!");
     }
 }
+
 function setupCookieClickHandler() {
     cookieImage.addEventListener("click", () => {
         if (!gameStarted) {
@@ -246,17 +254,6 @@ socket.on("gameReset", () => {
     }
 });
 
-startButton.addEventListener("click", () => {
-    username = usernameInput.value.trim();
-    if (username) {
-        usernameContainer.style.display = "none";
-        gameContainer.classList.remove("hidden");
-        createGameStructure();
-        socket.emit('newPlayer', { username });
-    } else {
-        alert("Please enter a username to start.");
-    }
-});
 socket.on("gameOver", ({ winner, score }) => {
     const winnerBanner = document.createElement("div");
     winnerBanner.style.position = "fixed";
@@ -278,11 +275,11 @@ socket.on("gameOver", ({ winner, score }) => {
     
     document.body.appendChild(winnerBanner);
     
-    // Remove the banner after 5 seconds
     setTimeout(() => {
         document.body.removeChild(winnerBanner);
     }, 5000);
 });
+
 socket.on('updatePlayers', (players) => {
     if (!otherPlayersContainer) return;
     
@@ -314,6 +311,18 @@ socket.on('updatePlayers', (players) => {
         `;
         
         otherPlayersContainer.appendChild(playerDiv);
+    }
+});
+
+startButton.addEventListener("click", () => {
+    username = usernameInput.value.trim();
+    if (username) {
+        usernameContainer.style.display = "none";
+        gameContainer.classList.remove("hidden");
+        createGameStructure();
+        socket.emit('newPlayer', { username });
+    } else {
+        alert("Please enter a username to start.");
     }
 });
 
